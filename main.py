@@ -1,7 +1,8 @@
 from network import WLAN, STA_IF
 from umqtt.simple import MQTTClient
 from time import sleep
-from json import dumps
+from machine import Pin
+from gc import mem_free, mem_alloc
 
 
 def carregar_arquivo(filename="config.txt"):
@@ -30,7 +31,8 @@ MQTT_PORTA = int(config.get('MQTT_PORTA'))
 MQTT_CLIENTE_ID = str(config.get('MQTT_CLIENTE_ID'))
 MQTT_USUARIO = str(config.get('MQTT_USUARIO'))
 MQTT_SENHA = str(config.get('MQTT_SENHA'))
-MQTT_TOPIC = str(config.get('MQTT_TOPIC'))
+MQTT_TOPIC_WIFI = str(config.get('MQTT_TOPIC_WIFI'))
+MQTT_TOPIC_MEMORIA = str(config.get('MQTT_TOPIC_MEMORIA'))
 
 
 def conectar_wifi():
@@ -48,6 +50,10 @@ def conectar_wifi():
         sleep(10)
     except Exception as e:
         print(f'Falha ao conectar ao Wi-Fi. Erro: {e}')
+    return wlan
+
+
+led = Pin(2, Pin.OUT)
 
 
 def conectar_broker():
@@ -66,15 +72,42 @@ def conectar_broker():
         return None
 
 
-def gerar_dados():
-    return dumps({"temperatura": 25.5, "umidade": 10})
+def get_wifi_info(wlan):
+    sta_if = wlan
+    if sta_if.isconnected():
+        return {
+            "Conectado": True,
+            "Nome_Rede": sta_if.config('essid'),
+            "Sinal_wifi": sta_if.status('rssi'),
+            "IP": sta_if.ifconfig()[0],
+            "Endereco_MAC": sta_if.config('mac').hex(':')
+        }
+    else:
+        return {"Conectado": False}
 
 
-def publicar_mensagem(cliente, mensagem):
+def get_memory_info():
+    return {
+        "Memoria_Livre": mem_free(),
+        "Memoria_Usada": mem_alloc()
+    }
+
+
+def publicar_mensagem(cliente, wifi_info, memoria_info):
     try:
-        cliente.publish(MQTT_TOPIC, mensagem, qos=0)
-        print(f'Mensagem publicada no tópico: "{MQTT_TOPIC}": {mensagem}')
-        sleep(5)
+        cliente.publish(MQTT_TOPIC_WIFI, str(wifi_info), qos=0)
+        print(
+            f'Mensagem publicada no tópico: "{MQTT_TOPIC_WIFI}": {wifi_info}')
+        cliente.publish(MQTT_TOPIC_MEMORIA, str(memoria_info), qos=0)
+        print(
+            f'''Mensagem publicada no tópico: "{MQTT_TOPIC_MEMORIA}":
+            {memoria_info}'''
+        )
+        for _ in range(4):
+            led.value(1)
+            sleep(0.2)
+            led.value(0)
+            sleep(0.2)
     except Exception as e:
         print(f'Erro ao publicar: {e}')
     # finally:
@@ -82,13 +115,19 @@ def publicar_mensagem(cliente, mensagem):
         # print('Broker MQTT desconectado.')
 
 
-conectar_wifi()
+wlan = conectar_wifi()
 cliente_mqtt = conectar_broker()
-dados = gerar_dados()
+INTERVALO = 2
 
 while True:
     if cliente_mqtt:
-        publicar_mensagem(cliente_mqtt, mensagem=dados)
+        wifi_info = get_wifi_info(wlan)
+        memoria_info = get_memory_info()
+        publicar_mensagem(cliente_mqtt, wifi_info=wifi_info,
+                          memoria_info=memoria_info)
+        sleep(INTERVALO)
     else:
-        print(f'Falha ao publicar mensagem: {cliente_mqtt}')
-        sleep(5)
+        print('Falha ao publicar mensagem. Cliente MQTT não conectado.')
+        wlan = conectar_wifi()
+        cliente_mqtt = conectar_broker()
+        sleep(INTERVALO)
