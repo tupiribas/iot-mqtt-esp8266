@@ -13,32 +13,23 @@ Este projeto implementa um sistema de **telemetria** utilizando o protocolo MQTT
 ## Tecnologias e Conceitos Utilizados
 
 * **ESP8266:** Microcontrolador utilizado para simular a coleta de dados de um sensor e publicar essas informações.
-* **MicroPython:** Firmware Python rodando no ESP8266.
+* **MicroPython: v1.24.1** Firmware Python rodando no ESP8266.
 * **MQTT (Message Queuing Telemetry Transport):** Protocolo de publicação/subscrição leve para comunicação entre o ESP8266, o broker local e o servidor local.
 * **Broker MQTT Local:** Servidor MQTT rodando na rede local da indústria, responsável por intermediar a comunicação MQTT.
-* **Broker MQTT na Nuvem (Opcional):** Servidor MQTT hospedado na nuvem para possibilitar acesso remoto aos dados. O broker local pode ser configurado para fazer um "bridge" com este broker.
-* **Servidor Local:** Um servidor (potencialmente rodando Python com Flask ou outra framework web) que atua como um cliente MQTT (assinando os dados do broker local) e como um servidor HTTP (servindo os dados para o painel de visualização).
-* **HTTP (Hypertext Transfer Protocol):** Protocolo utilizado para a comunicação entre o servidor local e o painel de visualização (interface web).
-* **Painel de Visualização:** Uma interface web para exibir os dados dos sensores em tempo real.
-* **Qualidade de Serviço (QoS):** Mecanismo do MQTT para garantir diferentes níveis de confiabilidade na entrega das mensagens.
+* **Servidor Local:** Um servidor (potencialmente rodando Python) que atua como um cliente MQTT (assinando os dados do broker local).
 
 ## Arquitetura do Sistema
 
-![Diagrama da Arquitetura do Sistema](https://i.imgur.com/SEu4K1n.png)
+![Diagrama da Arquitetura do Sistema](image.png)
 
-1.  **Coleta de Dados (ESP8266):** O ESP8266 (simulando um sensor) coleta dados (ex: status de uma porta) e os publica como mensagens MQTT no **Broker MQTT Local** em um tópico específico (ex: `/dev/porta/`).
-2.  **Comunicação Local (MQTT):** O **Servidor Local** se inscreve no tópico `/dev/porta/` do **Broker MQTT Local** via MQTT para receber os dados em tempo real.
+1.  **Coleta de Dados (ESP8266):** O ESP8266 (simulando um sensor) coleta dados (ex: status da conexão com a rede) e os publica como mensagens MQTT no **Broker MQTT Local** em um tópico específico (ex: `casa/temperatura/`).
+2.  **Comunicação Local (MQTT):** O **Servidor Local** se inscreve no tópico `casa/temperatura/` do **Broker MQTT Local** via MQTT para receber os dados em tempo real.
 3.  **Integração com a Nuvem (Opcional - Bridging MQTT):** O **Broker MQTT Local** pode ser configurado para enviar (fazer um "bridge") dados específicos para um **Broker MQTT na Nuvem**, permitindo acesso remoto.
-4.  **Visualização (HTTP):** O **Servidor Local**, após receber os dados via MQTT, os disponibiliza através de uma interface web (servidor HTTP). Um **Painel de Visualização** (executado em um navegador) consome esses dados via requisições HTTP para exibir as informações do sensor.
 
 ## Fluxo de Dados Detalhado
 
 1.  O ESP8266 (publicador) envia dados do sensor para o Broker MQTT Local via Wi-Fi usando o protocolo MQTT.
 2.  O Broker MQTT Local recebe a mensagem e a encaminha para todos os assinantes interessados.
-3.  O Servidor Local (assinante) recebe a mensagem do Broker MQTT Local via MQTT.
-4.  (Opcional) O Broker MQTT Local, se configurado, envia uma cópia da mensagem para o Broker MQTT na Nuvem.
-5.  O Servidor Local processa os dados recebidos e os disponibiliza através de sua interface HTTP.
-6.  Um navegador (Painel de Visualização) faz uma requisição HTTP ao Servidor Local para obter os dados e os exibe.
 
 ## Próximos Passos e Considerações
 
@@ -49,4 +40,4 @@ Este projeto implementa um sistema de **telemetria** utilizando o protocolo MQTT
 * Criação do Painel de Visualização (HTML, CSS, JavaScript) para exibir os dados consumidos do Servidor Local via HTTP.
 * Exploração dos diferentes níveis de Qualidade de Serviço (QoS) no MQTT para garantir a confiabilidade da entrega dos dados.
 
-Este README fornece um panorama da arquitetura de monitoramento industrial utilizando MQTT e HTTP, conforme discutido. A implementação prática envolverá a configuração de cada componente de software e hardware detalhadamente.
+Este README fornece um panorama da arquitetura de monitoramento da indústria 4.0 utilizando MQTT e HTTP (em breve), conforme discutido. A implementação prática envolverá a configuração de cada componente de software e hardware detalhadamente.

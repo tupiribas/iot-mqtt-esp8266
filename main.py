@@ -72,7 +72,7 @@ def gerar_dados():
 
 def publicar_mensagem(cliente, mensagem):
     try:
-        cliente.publish(MQTT_TOPIC, mensagem)
+        cliente.publish(MQTT_TOPIC, mensagem, qos=0)
         print(f'Mensagem publicada no tópico: "{MQTT_TOPIC}": {mensagem}')
         sleep(5)
     except Exception as e:
